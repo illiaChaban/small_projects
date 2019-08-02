@@ -1,0 +1,27 @@
+body {
+  --background-color: rgb(25, 24, 39);
+  --color-btn: #FF6138;
+  background: var(--background-color);
+}
+button {
+  --mouse-pos-x: 0px;
+  --mouse-pos-y: 0px;
+  
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  
+  border: 1px solid var(--color-btn);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 2rem;
+  color: var(--color-btn);
+  background: rgba(0,0,0,0);
+}
+
+button:hover {
+  color: var(--background-color);
+  background: yellow;
+  background: radial-gradient(circle at var(--mouse-pos-x) var(--mouse-pos-y), var(--color-btn) 20%,rgba(252,252,252,0) 100%);
+}
