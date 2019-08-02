@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css?family=Special+Elite&display=swap');
+
+body {
+  font-family: 'Special Elite', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #4f7b86;
+  color: #f2f1c6;
+  font-size: 2rem;
+}
+
+.text-cursor::after {
+  content: '|';
+  color: black;
+  opacity: 1;
+  animation: blinkTextCursor 1s infinite;
+}
+
+.text-cursor.typing::after {
+  animation: none;
+}
+
+@keyframes blinkTextCursor {
+  0%, 25%, 80%, 100% {
+    opacity: 1;
+  }
+  30%, 75% {
+    opacity: 0;
+  }
+}
+
+.buttons {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
