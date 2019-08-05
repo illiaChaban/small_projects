@@ -1,80 +1,66 @@
 class TextTyper {
-  constructor(el, minTypingTime=30, randomTypingTime=175) {
-    this.container = el;
-    this.cursorBlinkerTimeoutId;
+  constructor(elOrSelector, minTypingTime=30, randomTypingTime=175) {
+    this.container = typeof elOrSelector === 'string' ?
+      document.querySelector( elOrSelector ) :
+      elOrSelector;
+
     this.waitCharacters = '.?!';
 
     this.minTypingTime = minTypingTime;
     this.randomTypingTime = randomTypingTime;
 
-    this.stopAnimation = false;
-    this.currPromiseChain = Promise.resolve();
+    this.actions = new PromiseChain();
+    this.typingEvent = new Event('typing');
+  }
+
+  chain( callback ) {
+    this.actions.next( callback );
+    return this;
   }
 
   type(text) {
     for( let char of text ) { 
-      this.typeLetter(char);
+      this.typeLetter(char)
+          .wait( this.getRandomTime() );
       if (this.waitCharacters.includes(char)) this.wait(1000);
     }
     return this;
   }
 
   typeLetter(char) {
-    this.chain( () => new Promise( resolve => {
-      if (this.stopAnimation) return resolve();
-
-      setTimeout( () => {
-        this.container.innerText += char;
-        this.stopCursorBlinking();
-        resolve();
-      }, this.getRandomTimeout());
-    }));
+    this.chain( () => {
+      this.container.innerText += char;
+      this.container.dispatchEvent( this.typingEvent );
+    });
     return this;
   }
 
-  getRandomTimeout() {
+  getRandomTime() {
     // simulates real person's typing
     return Math.random() * this.randomTypingTime + this.minTypingTime; 
   }
 
-  stopCursorBlinking() {
-    this.container.classList.add('typing');
-    clearTimeout( this.cursorBlinkerTimeoutId );
-    this.cursorBlinkerTimeoutId = setTimeout( () => {
-      this.container.classList.remove('typing');
-    }, 200);
-  }
-
   remove(num) {
     for( let i = 0; i < num; i++ ) {
-      this.removeLetter();
+      this
+        .removeLetter()
+        // removing letters usually much faster
+        .wait( this.getRandomTime() / 2.5 );
     }
     return this;
   }
 
   removeLetter() {
-    this.chain( () => new Promise( resolve => {
-      if (this.stopAnimation) return resolve();
-
-      setTimeout( () => {
-        let currText = this.container.innerText;
-        this.container.innerText = currText.slice( 0, currText.length - 1);
-        this.stopCursorBlinking();
-        resolve();
-      }, this.getRandomTimeout() / 2.5);
-      // removing characters is usually much faster than typing
-
-    }))
+    this.chain( () => {
+      let currText = this.container.innerText;
+      this.container.innerText = currText.slice( 0, currText.length - 1);
+      this.container.dispatchEvent( this.typingEvent );
+    })
     return this;
   }
 
-  chain( callback ) {
-    this.currPromiseChain = this.currPromiseChain.then( callback );
-    return this;
-  }
   wait( time ) {
     this.chain( () => new Promise( resolve => {
-      if (this.stopAnimation) return resolve();
       setTimeout(resolve, time)
     }));
     return this;
@@ -84,8 +70,7 @@ class TextTyper {
     return this;
   }
   stop() {
-    this.stopAnimation = true;
-    this.chain( () => this.stopAnimation = false );
+    this.actions.cancel();
     return this;
   }
   clearNow() {
@@ -95,26 +80,66 @@ class TextTyper {
 
 }
 
-let typer = new TextTyper( document.getElementById('type-me') );
-
-document.querySelector('.buttons').addEventListener('click', (e) => {
-  let btnId = e.target.id;
-  switch (btnId) {
-    case 'stop':
-      typer.stop();
-      break;
-    case 'again':
-      typer
-        .clearNow()
-        .type("You liked that animation, didn\'t you? Don't forget to press the like button! NOW!", 1000);
-      break;
-    case 'clear':
-      typer.clearNow();
-      break;
+class PromiseChain {
+  constructor() {
+    this.chain = Promise.resolve();
+    this.cancelChain = false;
   }
-});
+
+  next( callback, cancelable = true ) {
+    this.chain = this.chain.then( () => {
+      if ( cancelable && this.cancelChain) return;
+      return callback();
+    });
+  }
+
+  cancel() {
+    this.cancelChain = true;
+    this.next( () => { this.cancelChain = false }, false );
+  }
+}
+
+
+const bindTyperAnimation = () => {
+  let cursorBlinkerTimeoutId;
+  let container = document.getElementById('type-me');
+  container.addEventListener('typing', () => {
+    container.classList.add('typing');
+    clearTimeout( cursorBlinkerTimeoutId );
+    cursorBlinkerTimeoutId = setTimeout( () => {
+      container.classList.remove('typing');
+    }, 200);
+  })
+};
+
+const bindTyperMenu = (typer) => {
+  const menu = document.querySelector('.menu');
+  const input = menu.querySelector('input'); 
+  menu.addEventListener('click', (e) => {
+    let btnId = e.target.id;
+    switch (btnId) {
+      case 'stop':
+        typer.stop();
+        break;
+      case 'type':
+        let text = input.value;
+        typer
+          .clearNow()
+          .type(text);
+        break;
+      case 'clear':
+        typer.clearNow();
+        break;
+    }
+  });
+};
+
 
 const init = () => {
+  const typer = new TextTyper('#type-me');
+  bindTyperAnimation();
+  bindTyperMenu( typer );
+
   // typing is devided into a few function calls just to demonstrate flexibility
   typer
     .clearNow()

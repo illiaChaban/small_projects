@@ -31,8 +31,12 @@ body {
   }
 }
 
-.buttons {
+.menu {
   position: absolute;
   top: 20px;
   right: 20px;
+}
+
+.menu input {
+  min-width: 200px;
 }
