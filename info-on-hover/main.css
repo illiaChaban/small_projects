@@ -1,0 +1,104 @@
+body {
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.info-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.info-box .show-on-hover
+{
+  margin: 5px 0 ;
+  position: relative;
+  width: 100%;
+  text-align: center;
+  overflow: hidden;
+  height: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  --block-width: 90%;
+}
+
+.info-box h2 {
+  text-transform: uppercase;
+}
+
+.info-box .icon i {
+  font-size: 4rem;
+}
+
+.show-on-hover {
+  /* visibility: hidden; */
+}
+
+.info-box:hover .show-on-hover {
+  visibility: visible; 
+  position: relative;
+}
+
+.info-box .show-on-hover::after,
+.info-box .show-on-hover::before
+{
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transition: .8s;
+}
+
+.info-box .show-on-hover::before
+{
+  width: 100%;
+  background: white;
+  left: 0;
+}
+
+.info-box .show-on-hover::after {
+  width: var(--block-width);
+}
+.info-box .show-on-hover.left::after {
+  background: rgb(255, 24, 255);
+}
+
+.info-box .show-on-hover.right::after {
+  background: rgb(60, 213, 255);
+}
+
+.info-box .show-on-hover.left::after {
+  left: calc( -1 * var(--block-width));
+}
+
+.info-box .show-on-hover.right::after {
+  left: 100%;
+}
+
+.info-box:hover .show-on-hover.left::before {
+  left: 150%;
+}
+.info-box:hover .show-on-hover.right::before {
+  left: -150%;
+}
+
+.info-box:hover .show-on-hover.left::after {
+  left: 100%;
+}
+.info-box:hover .show-on-hover.right::after {
+  left: calc( -1 * var(--block-width));
+}
+
+/* .info-box:hover .show-on-hover.left::after {
+  background: purple;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+} */
