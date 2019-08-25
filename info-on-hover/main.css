@@ -36,10 +36,6 @@ body {
   font-size: 4rem;
 }
 
-.show-on-hover {
-  /* visibility: hidden; */
-}
-
 .info-box:hover .show-on-hover {
   visibility: visible; 
   position: relative;
@@ -94,11 +90,3 @@ body {
 .info-box:hover .show-on-hover.right::after {
   left: calc( -1 * var(--block-width));
 }
-
-/* .info-box:hover .show-on-hover.left::after {
-  background: purple;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-} */

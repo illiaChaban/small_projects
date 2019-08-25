@@ -1,0 +1,44 @@
+body {
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+body {
+  cursor: none;
+}
+
+#cursor {
+  width: 20px;
+  height: 20px;
+  transform: translate(-50%, -50%);
+  border: 2px solid red;
+  border-radius: 50%;
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+
+  transform-origin: top left;
+  transition: width .2s, height .2s;
+  pointer-events: none;
+}
+
+#cursor.hover {
+  width: 100px;
+  height: 100px;
+  border-style: dashed;
+  animation: rotateMe 4s infinite linear;
+}
+
+@keyframes rotateMe {
+  0%{
+    transform: rotate(0deg) translate(-50%, -50%);
+  }
+  100%{
+    transform: rotate(360deg) translate(-50%, -50%);
+  }
+}
