@@ -87,15 +87,17 @@ class PromiseChain {
   }
 
   next( callback, cancelable = true ) {
-    this.chain = this.chain.then( () => {
+    this.chain = this.chain.then( (...args) => {
       if ( cancelable && this.cancelChain) return;
-      return callback();
+      return callback(...args);
     });
+    return this;
   }
 
   cancel() {
     this.cancelChain = true;
     this.next( () => { this.cancelChain = false }, false );
+    return this;
   }
 }
 
