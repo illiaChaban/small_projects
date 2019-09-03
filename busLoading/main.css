@@ -1,0 +1,28 @@
+g#POLYLINE_383_ path {
+  stroke-dasharray: 248;
+  stroke-dashoffset: 20;
+  /* animation: spin infinite 2s; */
+  /* transform-origin: center right; */
+}
+/* g#POLYLINE_383_ {
+  position: relative;
+} */
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0%;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* body {
+  background: yellow;
+} */
