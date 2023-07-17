@@ -1,0 +1,27 @@
+.app {
+  min-width: 100vw;
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: linear-gradient(to bottom, rgb(63, 108, 244), rgb(10, 10, 207));
+
+  padding: 16px;
+
+  --color-transparent: rgba(255, 255, 255, 0.3);
+
+  color: white;
+}
+
+.title1 {
+  font-size: 0.8rem;
+}
+
+.title2 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: var(--color-transparent);
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--color-transparent);
+}
