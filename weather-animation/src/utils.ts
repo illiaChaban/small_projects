@@ -1,3 +1,4 @@
+import { isNil } from "lodash";
 import { onCleanup } from "solid-js";
 
 import { createSignal, Accessor, Setter } from "solid-js";
@@ -9,6 +10,9 @@ export function useEvent<K extends keyof WindowEventMap>(
   window.addEventListener(event, fn);
   onCleanup(() => window.removeEventListener(event, fn));
 }
+
+type Nil = null | undefined;
+export const isDefined = <T>(v: T): v is Exclude<T, Nil> => !isNil(v);
 
 export type AnyFunc = (...args: any[]) => any;
 type SetWithCallback<T> = <U extends T>(callback: (prev: T) => U) => U;

@@ -1,13 +1,22 @@
-import { onMount, type Component, type JSX, onCleanup } from "solid-js";
+import {
+  onMount,
+  type Component,
+  type JSX,
+  onCleanup,
+  createEffect,
+} from "solid-js";
 
 import logo from "./logo.svg";
 import s from "./App.module.css";
 import { css, styled, keyframes } from "solid-styled-components";
-import { useAtom, useEvent } from "./utils";
+import { isDefined, useAtom, useEvent } from "./utils";
 import { pipeWith } from "pipe-ts";
 import _ from "lodash/fp";
+import { findIndex, toArray } from "lodash/fp";
 
 const App: Component = () => {
+  document.body.style.setProperty("--scroll-y", String(window.scrollY));
+
   useEvent("scroll", (e) => {
     // pipeWith(
     //   window.scrollY / (document.body.offsetHeight - window.innerHeight),
@@ -18,9 +27,15 @@ const App: Component = () => {
 
     pipeWith(
       window.scrollY,
-      _.tap((v) => console.log({ scrollY: v })),
+      Math.round,
+      // _.tap((v) => console.log({ scrollY: v })),
       String,
       (v) => document.body.style.setProperty("--scroll-y", v)
+    );
+
+    document.body.style.setProperty(
+      "--scroll-y-px",
+      "calc(var(--scroll-y) * 1px)"
     );
   });
 
@@ -278,49 +293,65 @@ const Widget = ({
   let headerRef = ref<HTMLDivElement>();
   let contentRef = ref<HTMLDivElement>();
 
-  const height$ = useAtom(0);
-  const headerHeight$ = useAtom(0);
+  const values$ = useAtom<{
+    height: number;
+    headerHeight: number;
+    maxOffset: number;
+  }>();
 
+  const idx$ = useAtom<number>();
+
+  const stickyPosition = 90;
+
+  const mounted$ = () => !!values$();
+
+  // createEffect(() => console.log(values$()));
   onMount(() => {
-    // let options = {
-    //   root: headerRef,
-    //   rootMargin: "0px",
-    //   // threshold: 1.0,
-    // };
+    pipeWith(
+      document.querySelectorAll("[data-role=widget]"),
+      toArray,
+      findIndex((v) => v === containerRef),
+      idx$
+    );
 
-    // let observer = new IntersectionObserver((entries, observer) => {
-    //   entries.forEach((entry) => {
-    //     console.log(entry);
-    //   });
-    // }, options);
-
-    // observer.observe(contentRef);
-
-    // onCleanup(() => observer.disconnect());
-
-    console.log({ top: containerRef.offsetTop });
-    height$(containerRef.offsetHeight);
-    headerHeight$(headerRef.offsetHeight);
+    values$({
+      height: containerRef.offsetHeight,
+      headerHeight: headerRef.offsetHeight,
+      maxOffset: pipeWith(
+        window.scrollY +
+          containerRef.getBoundingClientRect().top -
+          stickyPosition,
+        Math.round
+      ),
+    });
   });
 
   return (
     <div
       ref={containerRef}
-      class={cx(
-        css`
+      data-role="widget"
+      classList={{
+        [css`
           position: sticky;
-          top: 90px;
-        `
-      )}
-      style={
-        height$()
+          top: ${String(stickyPosition)}px;
+          opacity: 0;
+          animation: ${revealAnimation} 0.5s forwards;
+        `]: mounted$(),
+        [css`
+          animation-delay: ${pipeWith(idx$() ?? 0, (v) => v / 7, String)}s;
+        `]: isDefined(idx$()),
+      }}
+      style={pipeWith(values$(), (v) =>
+        v
           ? `
-        --height: ${height$()}px; 
-        --header-height: ${headerHeight$()}px; 
+        --height: ${v.height}px; 
+        --header-height: ${v.headerHeight}px; 
+        --max-offset: ${v.maxOffset}px; 
+        --scroll-offset: calc(var(--scroll-y-px) - var(--max-offset));
         height: var(--height);
       `
           : ""
-      }
+      )}
     >
       <div
         class={cx(
@@ -331,11 +362,11 @@ const Widget = ({
             clip-path: inset(0 round 10px);
             /* max-height: max(
               var(--header-height),
-              calc(var(--height) - max(0, var(--scroll-y) * 1px - 90px))
+              calc(var(--height) - max(0, var(--scroll-y-px) - 90px))
             ); */
             max-height: max(
               var(--header-height),
-              var(--height) - var(--scroll-y) * 1px + 176px
+              var(--height) - var(--scroll-y-px) + var(--max-offset)
             );
             /* position: sticky;
         top: 90px; */
@@ -381,7 +412,10 @@ const Widget = ({
             class={cx(
               paddingStyles,
               css`
-                transform: translateY(min(0px, 176px - var(--scroll-y) * 1px));
+                position: relative;
+                transform: translateY(
+                  min(0px, var(--max-offset) - var(--scroll-y-px))
+                );
               `
               // css`
               //   transform: translateY(-40px);
@@ -413,6 +447,18 @@ const Widget = ({
     </div>
   );
 };
+
+const revealAnimation = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    /* scale: 1; */
+    transform: translateY(0);
+  }
+`;
 
 // const WidgetV2 = (p: { rows: number; title: JSX.Element }) => {
 //   return (
