@@ -3,7 +3,7 @@ import { onMount, type Component, type JSX, onCleanup } from "solid-js";
 import logo from "./logo.svg";
 import s from "./App.module.css";
 import { css, styled, keyframes } from "solid-styled-components";
-import { useEvent } from "./utils";
+import { useAtom, useEvent } from "./utils";
 import { pipeWith } from "pipe-ts";
 import _ from "lodash/fp";
 
@@ -25,7 +25,14 @@ const App: Component = () => {
   });
 
   return (
-    <div class={s.app}>
+    <div
+      class={cx(
+        s.app
+        // css`
+        //   position: relative;
+        // `
+      )}
+    >
       <div
         class={css`
           display: flex;
@@ -271,46 +278,82 @@ const Widget = ({
   let headerRef = ref<HTMLDivElement>();
   let contentRef = ref<HTMLDivElement>();
 
+  const height$ = useAtom(0);
+  const headerHeight$ = useAtom(0);
+
   onMount(() => {
-    let options = {
-      root: headerRef,
-      rootMargin: "0px",
-      // threshold: 1.0,
-    };
+    // let options = {
+    //   root: headerRef,
+    //   rootMargin: "0px",
+    //   // threshold: 1.0,
+    // };
 
-    let observer = new IntersectionObserver((entries, observer) => {
-      entries.forEach((entry) => {
-        console.log(entry);
-      });
-    }, options);
+    // let observer = new IntersectionObserver((entries, observer) => {
+    //   entries.forEach((entry) => {
+    //     console.log(entry);
+    //   });
+    // }, options);
 
-    observer.observe(contentRef);
+    // observer.observe(contentRef);
 
-    onCleanup(() => observer.disconnect());
+    // onCleanup(() => observer.disconnect());
+
+    console.log({ top: containerRef.offsetTop });
+    height$(containerRef.offsetHeight);
+    headerHeight$(headerRef.offsetHeight);
   });
 
   return (
     <div
       ref={containerRef}
-      class={css`
-        color: white;
-        border-radius: 10px;
-        clip-path: inset(0 round 10px);
-      `}
+      class={cx(
+        css`
+          position: sticky;
+          top: 90px;
+        `
+      )}
+      style={
+        height$()
+          ? `
+        --height: ${height$()}px; 
+        --header-height: ${headerHeight$()}px; 
+        height: var(--height);
+      `
+          : ""
+      }
     >
       <div
-        ref={headerRef}
         class={cx(
           backdropStyles,
-          paddingStyles,
           css`
-            border-top-right-radius: 10px;
-            border-top-left-radius: 10px;
-            position: sticky;
-            top: 90px;
+            color: white;
+            border-radius: 10px;
+            clip-path: inset(0 round 10px);
+            /* max-height: max(
+              var(--header-height),
+              calc(var(--height) - max(0, var(--scroll-y) * 1px - 90px))
+            ); */
+            max-height: max(
+              var(--header-height),
+              var(--height) - var(--scroll-y) * 1px + 176px
+            );
+            /* position: sticky;
+        top: 90px; */
+          `
+        )}
+      >
+        <div
+          ref={headerRef}
+          class={cx(
+            paddingStyles,
+            css`
+              border-top-right-radius: 10px;
+              border-top-left-radius: 10px;
+              /* position: sticky;
+            top: 90px; */
 
-            /* z-index: 1; */
-            /* &::after {
+              /* z-index: 1; */
+              /* &::after {
               content: "";
               position: absolute;
               width: calc(100% - 14px * 2);
@@ -320,37 +363,52 @@ const Widget = ({
               background: var(--color-transparent);
               z-index: 2;
             } */
-          `
-        )}
-      >
-        {title}
-      </div>
-      <div
-        ref={contentRef}
-        class={cx(
-          backdropStyles,
-          paddingStyles,
-          // css`
-          //   border-bottom-right-radius: 10px;
-          //   border-bottom-left-radius: 10px;
-          // `,
-          css`
-            clip-path: inset(calc(var(--scroll-y) * 1px - 176px) 0 0 0);
-          `
-        )}
-      >
-        <hr
-          class={css`
-            margin: 0 0 14px;
-            position: absolute;
-            top: 0;
-            width: calc(100% - 14px * 2);
-            height: 1px;
-            left: 14px;
-            z-index: 1;
-          `}
-        />
-        {children}
+            `
+          )}
+        >
+          {title}
+        </div>
+
+        <div
+          class={cx(
+            css`
+              overflow-y: clip;
+            `
+          )}
+        >
+          <div
+            ref={contentRef}
+            class={cx(
+              paddingStyles,
+              css`
+                transform: translateY(min(0px, 176px - var(--scroll-y) * 1px));
+              `
+              // css`
+              //   transform: translateY(-40px);
+              // `,
+              // css`
+              //   border-bottom-right-radius: 10px;
+              //   border-bottom-left-radius: 10px;
+              // `
+              // css`
+              //   clip-path: inset(calc(var(--scroll-y) * 1px - 176px) 0 0 0);
+              // `
+            )}
+          >
+            <hr
+              class={css`
+                margin: 0 0 14px;
+                position: absolute;
+                top: 0;
+                width: calc(100% - 14px * 2);
+                height: 1px;
+                left: 14px;
+                z-index: 1;
+              `}
+            />
+            {children}
+          </div>
+        </div>
       </div>
     </div>
   );
