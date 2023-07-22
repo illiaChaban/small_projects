@@ -1,4 +1,4 @@
-import type { Component, JSX } from "solid-js";
+import { onMount, type Component, type JSX, onCleanup } from "solid-js";
 
 import logo from "./logo.svg";
 import s from "./App.module.css";
@@ -258,54 +258,98 @@ const Widget = ({
   title: JSX.Element;
   children: JSX.Element;
 }) => {
-  const sharedStyles = css`
-    color: white;
+  const backdropStyles = css`
     backdrop-filter: blur(10px);
     background: rgba(65, 65, 65, 0.21);
-    /* padding: 14px; */
   `;
+
+  const paddingStyles = css`
+    padding: 14px;
+  `;
+
+  let containerRef = ref<HTMLDivElement>();
+  let headerRef = ref<HTMLDivElement>();
+  let contentRef = ref<HTMLDivElement>();
+
+  onMount(() => {
+    let options = {
+      root: headerRef,
+      rootMargin: "0px",
+      // threshold: 1.0,
+    };
+
+    let observer = new IntersectionObserver((entries, observer) => {
+      entries.forEach((entry) => {
+        console.log(entry);
+      });
+    }, options);
+
+    observer.observe(contentRef);
+
+    onCleanup(() => observer.disconnect());
+  });
+
   return (
     <div
+      ref={containerRef}
       class={css`
         color: white;
-        backdrop-filter: blur(10px);
-        background: rgba(65, 65, 65, 0.21);
         border-radius: 10px;
-        /* position: sticky;
-        top: 186px; */
+        clip-path: inset(0 round 10px);
       `}
     >
       <div
-        classList={{
-          [css`
+        ref={headerRef}
+        class={cx(
+          backdropStyles,
+          paddingStyles,
+          css`
+            border-top-right-radius: 10px;
+            border-top-left-radius: 10px;
             position: sticky;
             top: 90px;
-          `]: true,
-        }}
+
+            /* z-index: 1; */
+            /* &::after {
+              content: "";
+              position: absolute;
+              width: calc(100% - 14px * 2);
+              height: 1px;
+              left: 14px;
+              bottom: 0;
+              background: var(--color-transparent);
+              z-index: 2;
+            } */
+          `
+        )}
       >
-        <div
-          classList={{
-            [css`
-              padding: 14px;
-            `]: true,
-          }}
-        >
-          {title}
-        </div>
-        <div
-          class={css`
-            border-bottom: 1px solid var(--color-transparent);
-          `}
-        />
+        {title}
       </div>
       <div
-        classList={{
-          [css`
-            position: sticky;
-            top: 231px;
-          `]: true,
-        }}
+        ref={contentRef}
+        class={cx(
+          backdropStyles,
+          paddingStyles,
+          // css`
+          //   border-bottom-right-radius: 10px;
+          //   border-bottom-left-radius: 10px;
+          // `,
+          css`
+            clip-path: inset(calc(var(--scroll-y) * 1px - 176px) 0 0 0);
+          `
+        )}
       >
+        <hr
+          class={css`
+            margin: 0 0 14px;
+            position: absolute;
+            top: 0;
+            width: calc(100% - 14px * 2);
+            height: 1px;
+            left: 14px;
+            z-index: 1;
+          `}
+        />
         {children}
       </div>
     </div>
@@ -324,5 +368,9 @@ const Widget = ({
 //     </div>
 //   );
 // };
+
+const ref = <T extends any = HTMLElement>(): T => null as any as T;
+
+const cx = (...styles: string[]) => styles.join(" ");
 
 export default App;
