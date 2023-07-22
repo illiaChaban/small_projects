@@ -66,7 +66,7 @@ const App: Component = () => {
             );
           `}
         >
-          23* | Partly Cloudy
+          23° | Partly Cloudy
         </div>
 
         <div
@@ -82,7 +82,7 @@ const App: Component = () => {
             );
           `}
         >
-          23 d
+          23°
         </div>
         <div
           class={css`
@@ -104,7 +104,7 @@ const App: Component = () => {
             );
           `}
         >
-          H:35 L:21
+          H:35° L:21°
         </div>
       </div>
 
