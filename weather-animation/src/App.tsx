@@ -17,6 +17,11 @@ import { findIndex, toArray } from "lodash/fp";
 const App: Component = () => {
   document.body.style.setProperty("--scroll-y", String(window.scrollY));
 
+  document.body.style.setProperty(
+    "--scroll-y-px",
+    "calc(var(--scroll-y) * 1px)"
+  );
+
   useEvent("scroll", (e) => {
     // pipeWith(
     //   window.scrollY / (document.body.offsetHeight - window.innerHeight),
@@ -31,11 +36,6 @@ const App: Component = () => {
       // _.tap((v) => console.log({ scrollY: v })),
       String,
       (v) => document.body.style.setProperty("--scroll-y", v)
-    );
-
-    document.body.style.setProperty(
-      "--scroll-y-px",
-      "calc(var(--scroll-y) * 1px)"
     );
   });
 
@@ -59,6 +59,7 @@ const App: Component = () => {
           top: -24px;
           /* z-index: 1; */
           /* background: blue; */
+          animation: ${fadeOutAnimation} 0.2s reverse;
         `}
       >
         <div
@@ -69,6 +70,7 @@ const App: Component = () => {
         >
           Marietta
         </div>
+
         <div
           class={css`
             position: absolute;
@@ -95,9 +97,14 @@ const App: Component = () => {
             animation-delay: calc(
               max(0, min(1, (var(--scroll-y) - 95) / 40)) * -1s
             );
+
+            &::after {
+              content: "°";
+              position: absolute;
+            }
           `}
         >
-          23°
+          23
         </div>
         <div
           class={css`
@@ -174,17 +181,60 @@ const Progress = ({ low, high }: { low: number; high: number }) => {
   );
 };
 
+const WidgetTitle = styled("div")`
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: var(--color-transparent);
+`;
+
 const HourlyWeatherWidget = () => (
   <Widget
     title={
-      <div class={s.title1}>
-        Partly cloudy conditions expected around 20:00.
+      <div
+        class={css`
+          position: relative;
+        `}
+      >
+        <WidgetTitle
+          class={css`
+            animation: ${fadeOutAnimation} 1s linear forwards;
+            animation-direction: reverse;
+            animation-play-state: paused;
+            animation-delay: calc(
+              max(0, min(1, (var(--scroll-y) - 180) / 40)) * -1s
+            );
+          `}
+        >
+          Hourly forecast
+        </WidgetTitle>
+        <div
+          class={cx(css`
+            font-size: 0.85rem;
+            position: absolute;
+            top: 0;
+            width: 100%;
+            animation: ${fadeOutAnimation} 1s linear forwards;
+            animation-play-state: paused;
+            animation-delay: calc(
+              max(0, min(1, (var(--scroll-y) - 160) / 30)) * -1s
+            );
+          `)}
+        >
+          Clear conditions tonight, continuing throughout the morning. Wind
+          gusts are up to 11 mph.
+          <hr
+            class={css`
+              margin: 14px -14px 0 0;
+            `}
+          />
+        </div>
       </div>
     }
   >
     <div
       class={
         css`
+          padding-top: 12px;
           margin-left: -14px;
           margin-right: -14px;
           overflow-x: auto;
@@ -195,7 +245,8 @@ const HourlyWeatherWidget = () => (
         class={css`
           display: flex;
           gap: 16px;
-          padding-left: 14px;
+          /* padding-left: 14px; */
+          padding: 14px 0 14px 14px;
         `}
       >
         {[23, 24, 24, 24, 23, 22, 21, 20, 18, 17, 16, 15, 14].map(
@@ -209,7 +260,7 @@ const HourlyWeatherWidget = () => (
                 gap: 8px;
               `}
             >
-              <div>{i === 0 ? "Now" : (i + 15) % 24}</div>
+              <div>{i === 0 ? "Now" : (i + 24) % 31}</div>
               <div>{temperature}</div>
             </div>
           )
@@ -227,7 +278,7 @@ const HourlyWeatherWidget = () => (
 );
 
 const TenDayForcastWidget = () => (
-  <Widget title={<div class={s.title2}>10-day forcast</div>}>
+  <Widget title={<WidgetTitle>10-day forcast</WidgetTitle>}>
     {[
       { time: "Today", low: 11, high: 24 },
       { time: "Mon", low: 13, high: 24 },
@@ -243,6 +294,8 @@ const TenDayForcastWidget = () => (
       { time: "Thu", low: 11, high: 20 },
     ].map((x, i, arr) => (
       <>
+        {/* {i === 0 ? <hr style="position: absolute; margin-top: 0;" /> : <hr />} */}
+        {/* {i !== arr.length - 1 && <hr />} */}
         <div
           class={css`
             display: grid;
@@ -251,6 +304,17 @@ const TenDayForcastWidget = () => (
             column-count: 4;
             gap: 10px;
             align-items: center;
+            padding: 8px 0;
+            position: relative;
+            &::before {
+              content: "";
+              position: absolute;
+              top: 0;
+              left: 0;
+              right: 0;
+              height: 1px;
+              background-color: var(--color-transparent);
+            }
           `}
         >
           <Centered>{x.time}</Centered>
@@ -258,7 +322,6 @@ const TenDayForcastWidget = () => (
           <Progress low={x.low} high={x.high} />
           <Centered>{x.high}</Centered>
         </div>
-        {i !== arr.length - 1 && <hr />}
       </>
     ))}
   </Widget>
@@ -359,7 +422,6 @@ const Widget = ({
           css`
             color: white;
             border-radius: 10px;
-            clip-path: inset(0 round 10px);
             /* max-height: max(
               var(--header-height),
               calc(var(--height) - max(0, var(--scroll-y-px) - 90px))
@@ -410,8 +472,9 @@ const Widget = ({
           <div
             ref={contentRef}
             class={cx(
-              paddingStyles,
+              // paddingStyles,
               css`
+                padding: 0 14px;
                 position: relative;
                 transform: translateY(
                   min(0px, var(--max-offset) - var(--scroll-y-px))
@@ -429,7 +492,7 @@ const Widget = ({
               // `
             )}
           >
-            <hr
+            {/* <hr
               class={css`
                 margin: 0 0 14px;
                 position: absolute;
@@ -439,7 +502,7 @@ const Widget = ({
                 left: 14px;
                 z-index: 1;
               `}
-            />
+            /> */}
             {children}
           </div>
         </div>
