@@ -10,7 +10,7 @@ import logo from "./logo.svg";
 import s from "./App.module.css";
 import { css, styled, keyframes } from "solid-styled-components";
 import { isDefined, useAtom, useEvent } from "./utils";
-import { pipeWith } from "pipe-ts";
+import { pipeWith as p } from "pipe-ts";
 import _ from "lodash/fp";
 import { findIndex, toArray } from "lodash/fp";
 
@@ -30,7 +30,7 @@ const App: Component = () => {
     //   (v) => document.body.style.setProperty("--scroll", v)
     // );
 
-    pipeWith(
+    p(
       window.scrollY,
       Math.round,
       // _.tap((v) => console.log({ scrollY: v })),
@@ -78,9 +78,7 @@ const App: Component = () => {
             animation: ${fadeOutAnimation} 1s linear forwards;
             animation-direction: reverse;
             animation-play-state: paused;
-            animation-delay: calc(
-              max(0, min(1, (var(--scroll-y) - 120) / 40)) * -1s
-            );
+            animation-delay: clamp(-1s, (var(--scroll-y) - 120) / 40 * -1s, 0s);
           `}
         >
           23° | Partly Cloudy
@@ -94,9 +92,7 @@ const App: Component = () => {
 
             animation: ${fadeOutAnimation} 1s linear forwards;
             animation-play-state: paused;
-            animation-delay: calc(
-              max(0, min(1, (var(--scroll-y) - 95) / 40)) * -1s
-            );
+            animation-delay: clamp(-1s, (var(--scroll-y) - 95) / 40 * -1s, 0s);
 
             &::after {
               content: "°";
@@ -110,9 +106,7 @@ const App: Component = () => {
           class={css`
             animation: ${fadeOutAnimation} 1s linear forwards;
             animation-play-state: paused;
-            animation-delay: calc(
-              max(0, min(1, (var(--scroll-y) - 65) / 40)) * -1s
-            );
+            animation-delay: clamp(-1s, (var(--scroll-y) - 65) / 40 * -1s, 0s);
           `}
         >
           Partly Cloudy
@@ -121,9 +115,7 @@ const App: Component = () => {
           class={css`
             animation: ${fadeOutAnimation} 1s linear forwards;
             animation-play-state: paused;
-            animation-delay: calc(
-              max(0, min(1, (var(--scroll-y) - 45) / 40)) * -1s
-            );
+            animation-delay: clamp(-1s, (var(--scroll-y) - 45) / 40 * -1s, 0s);
           `}
         >
           H:35° L:21°
@@ -156,7 +148,7 @@ const fadeOutAnimation = keyframes`
 
 const comfortableTemp = [14, 21];
 const Progress = ({ low, high }: { low: number; high: number }) => {
-  const toPercent = (num: number) => Math.round(minMax(0, 100)(num * 100));
+  const toPercent = (num: number) => Math.round(clamp(0, 100)(num * 100));
   const fullRange = high - low;
   const start = toPercent((comfortableTemp[0] - low) / fullRange);
   const end = toPercent((comfortableTemp[1] - low) / fullRange);
@@ -200,9 +192,7 @@ const HourlyWeatherWidget = () => (
             animation: ${fadeOutAnimation} 1s linear forwards;
             animation-direction: reverse;
             animation-play-state: paused;
-            animation-delay: calc(
-              max(0, min(1, (var(--scroll-y) - 180) / 40)) * -1s
-            );
+            animation-delay: clamp(-1s, (var(--scroll-y) - 180) / 40 * -1s, 0s);
           `}
         >
           Hourly forecast
@@ -215,9 +205,7 @@ const HourlyWeatherWidget = () => (
             width: 100%;
             animation: ${fadeOutAnimation} 1s linear forwards;
             animation-play-state: paused;
-            animation-delay: calc(
-              max(0, min(1, (var(--scroll-y) - 160) / 30)) * -1s
-            );
+            animation-delay: clamp(-1s, (var(--scroll-y) - 160) / 30 * -1s, 0s);
           `)}
         >
           Clear conditions tonight, continuing throughout the morning. Wind
@@ -312,7 +300,7 @@ const TenDayForcastWidget = () => (
               top: 0;
               left: 0;
               right: 0;
-              height: 1px;
+              height: 0.5px;
               background-color: var(--color-transparent);
             }
           `}
@@ -327,7 +315,7 @@ const TenDayForcastWidget = () => (
   </Widget>
 );
 
-const minMax = (min: number, max: number) => (num: number) =>
+const clamp = (min: number, max: number) => (num: number) =>
   Math.max(Math.min(num, max), min);
 
 const Centered = styled("div")`
@@ -370,7 +358,7 @@ const Widget = ({
 
   // createEffect(() => console.log(values$()));
   onMount(() => {
-    pipeWith(
+    p(
       document.querySelectorAll("[data-role=widget]"),
       toArray,
       findIndex((v) => v === containerRef),
@@ -380,7 +368,7 @@ const Widget = ({
     values$({
       height: containerRef.offsetHeight,
       headerHeight: headerRef.offsetHeight,
-      maxOffset: pipeWith(
+      maxOffset: p(
         window.scrollY +
           containerRef.getBoundingClientRect().top -
           stickyPosition,
@@ -389,10 +377,53 @@ const Widget = ({
     });
   });
 
+  const styles$ = () =>
+    p(values$(), (v) =>
+      v
+        ? css`
+            --height: ${String(v.height)}px;
+            --header-height: ${String(v.headerHeight)}px;
+            --container-height: ${String(v.height - v.headerHeight)}px;
+            --max-offset: ${String(v.maxOffset)}px;
+            --scroll-offset: min(0px, var(--max-offset) - var(--scroll-y-px));
+            --header-offset-coefficient: clamp(
+              -1,
+              (var(--scroll-offset) + var(--container-height)) /
+                var(--header-height),
+              0
+            );
+            height: var(--height);
+          `
+        : ""
+    );
+
+  // const props = [
+  //   "--height",
+  //   "--header-height",
+  //   "--container-height",
+  //   "--max-offset",
+  //   "--scroll-offset",
+  //   "--header-offset-coefficient",
+  // ];
+  // window.getCssVarValue = (names: string[] = props, index: number = 0) => {
+  //   const widget: HTMLDivElement = pipeWith(
+  //     document.querySelectorAll("[data-role=widget]"),
+  //     toArray,
+  //     (v) => v[index]
+  //   );
+  //   pipeWith(
+  //     getComputedStyle(widget),
+  //     (s) => names.map((n) => [n, s.getPropertyValue(n)]),
+  //     Object.fromEntries,
+  //     (v) => console.log(index, v)
+  //   );
+  // };
+
   return (
     <div
       ref={containerRef}
       data-role="widget"
+      class={styles$()}
       classList={{
         [css`
           position: sticky;
@@ -401,20 +432,9 @@ const Widget = ({
           animation: ${revealAnimation} 0.5s forwards;
         `]: mounted$(),
         [css`
-          animation-delay: ${pipeWith(idx$() ?? 0, (v) => v / 7, String)}s;
+          animation-delay: ${p(idx$() ?? 0, (v) => v / 7, String)}s;
         `]: isDefined(idx$()),
       }}
-      style={pipeWith(values$(), (v) =>
-        v
-          ? `
-        --height: ${v.height}px; 
-        --header-height: ${v.headerHeight}px; 
-        --max-offset: ${v.maxOffset}px; 
-        --scroll-offset: calc(var(--scroll-y-px) - var(--max-offset));
-        height: var(--height);
-      `
-          : ""
-      )}
     >
       <div
         class={cx(
@@ -422,16 +442,10 @@ const Widget = ({
           css`
             color: white;
             border-radius: 10px;
-            /* max-height: max(
-              var(--header-height),
-              calc(var(--height) - max(0, var(--scroll-y-px) - 90px))
-            ); */
             max-height: max(
               var(--header-height),
               var(--height) - var(--scroll-y-px) + var(--max-offset)
             );
-            /* position: sticky;
-        top: 90px; */
           `
         )}
       >
@@ -476,9 +490,7 @@ const Widget = ({
               css`
                 padding: 0 14px;
                 position: relative;
-                transform: translateY(
-                  min(0px, var(--max-offset) - var(--scroll-y-px))
-                );
+                transform: translateY(var(--scroll-offset));
               `
               // css`
               //   transform: translateY(-40px);
