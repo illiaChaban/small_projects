@@ -12,15 +12,15 @@ import { css, styled, keyframes } from "solid-styled-components";
 import { isDefined, useAtom, useEvent } from "./utils";
 import { pipeWith as p } from "pipe-ts";
 import _ from "lodash/fp";
-import { findIndex, toArray } from "lodash/fp";
+import { findIndex, toArray, throttle } from "lodash/fp";
 
 const App: Component = () => {
   document.body.style.setProperty("--scroll-y", String(window.scrollY));
 
-  document.body.style.setProperty(
-    "--scroll-y-px",
-    "calc(var(--scroll-y) * 1px)"
-  );
+  // document.body.style.setProperty(
+  //   "--scroll-y-px",
+  //   "calc(var(--scroll-y) * 1px)"
+  // );
 
   useEvent("scroll", (e) => {
     // pipeWith(
@@ -381,18 +381,18 @@ const Widget = ({
     p(values$(), (v) =>
       v
         ? css`
-            --height: ${String(v.height)}px;
-            --header-height: ${String(v.headerHeight)}px;
-            --container-height: ${String(v.height - v.headerHeight)}px;
-            --max-offset: ${String(v.maxOffset)}px;
-            --scroll-offset: min(0px, var(--max-offset) - var(--scroll-y-px));
+            --height: ${String(v.height)};
+            --header-height: ${String(v.headerHeight)};
+            --container-height: ${String(v.height - v.headerHeight)};
+            --max-offset: ${String(v.maxOffset)};
+            --scroll-offset: min(0, var(--max-offset) - var(--scroll-y));
             --header-offset-coefficient: clamp(
               -1,
-              (var(--scroll-offset) + var(--container-height)) /
+              (var(--container-height) + var(--scroll-offset)) /
                 var(--header-height),
               0
             );
-            height: var(--height);
+            height: calc(var(--height) * 1px);
           `
         : ""
     );
@@ -423,7 +423,12 @@ const Widget = ({
     <div
       ref={containerRef}
       data-role="widget"
-      class={styles$()}
+      class={cx(
+        styles$(),
+        css`
+          backdrop-filter: blur(10px);
+        `
+      )}
       classList={{
         [css`
           position: sticky;
@@ -442,10 +447,19 @@ const Widget = ({
           css`
             color: white;
             border-radius: 10px;
-            max-height: max(
-              var(--header-height),
-              var(--height) - var(--scroll-y-px) + var(--max-offset)
+            max-height: calc(
+              max(var(--header-height), var(--height) + var(--scroll-offset)) *
+                1px
             );
+            /* &::after {
+              content: "";
+              position: absolute;
+              width: 100px;
+              height: calc(-45px * var(--header-offset-coefficient));
+              background: red;
+              top: 0;
+            } */
+            opacity: clamp(0, 1.2 + var(--header-offset-coefficient) * 1.5, 1);
           `
         )}
       >
@@ -490,7 +504,7 @@ const Widget = ({
               css`
                 padding: 0 14px;
                 position: relative;
-                transform: translateY(var(--scroll-offset));
+                transform: translateY(calc(var(--scroll-offset) * 1px));
               `
               // css`
               //   transform: translateY(-40px);
