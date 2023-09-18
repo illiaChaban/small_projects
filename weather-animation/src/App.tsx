@@ -4,6 +4,8 @@ import {
   type JSX,
   onCleanup,
   createEffect,
+  createMemo,
+  splitProps,
 } from "solid-js";
 
 import logo from "./logo.svg";
@@ -13,6 +15,9 @@ import { isDefined, useAtom, useEvent } from "./utils";
 import { pipeWith as p } from "pipe-ts";
 import _ from "lodash/fp";
 import { findIndex, toArray, throttle } from "lodash/fp";
+import { Dynamic } from "solid-js/web";
+import { isFunction } from "lodash";
+import { tw } from "./utils/tw";
 
 const App: Component = () => {
   document.body.style.setProperty("--scroll-y", String(window.scrollY));
@@ -49,86 +54,51 @@ const App: Component = () => {
       )}
     >
       <div
-        class={css`
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          padding: 48px 0;
-          position: sticky;
-          top: -24px;
-          /* z-index: 1; */
-          /* background: blue; */
-          animation: ${fadeOutAnimation} 0.2s reverse;
+        class={tw`
+          flex flex-col justify-center items-center
+          py-12 sticky top-[-24px]
+          animate-fadeOut
+          animation-reversed
+          [animation-duration:0.4s]
         `}
       >
+        <div class="text-[1.3rem]/[1.3rem]">Marietta</div>
         <div
-          class={css`
-            font-size: 1.3rem;
-            line-height: 1.3rem;
-          `}
-        >
-          Marietta
-        </div>
-
-        <div
-          class={css`
-            position: absolute;
-            top: 74px;
-            animation: ${fadeOutAnimation} 1s linear forwards;
-            animation-direction: reverse;
-            animation-play-state: paused;
-            animation-delay: clamp(-1s, (var(--scroll-y) - 120) / 40 * -1s, 0s);
-          `}
+          class={cx(
+            tw`
+              top-[74px] absolute 
+              animate-fadeOut animation-reversed animation-paused
+            `
+          )}
+          style="animation-delay: clamp(-1s, (var(--scroll-y) - 120) / 45 * -1s, 0s)"
         >
           23° | Partly Cloudy
         </div>
 
         <div
-          class={css`
-            font-size: 5rem;
-            line-height: 5rem;
-            padding-bottom: 10px;
-
-            animation: ${fadeOutAnimation} 1s linear forwards;
-            animation-play-state: paused;
-            animation-delay: clamp(-1s, (var(--scroll-y) - 95) / 40 * -1s, 0s);
-
-            &::after {
-              content: "°";
-              position: absolute;
-            }
+          class={tw`
+            text-[5rem]/[5rem] pb-2.5 
+            animate-fadeOut animation-paused
           `}
+          style="animation-delay: clamp(-1s, (var(--scroll-y) - 95) / 40 * -1s, 0s)"
         >
           23
         </div>
         <div
-          class={css`
-            animation: ${fadeOutAnimation} 1s linear forwards;
-            animation-play-state: paused;
-            animation-delay: clamp(-1s, (var(--scroll-y) - 65) / 40 * -1s, 0s);
-          `}
+          class="animate-fadeOut animation-paused"
+          style="animation-delay: clamp(-1s, (var(--scroll-y) - 65) / 40 * -1s, 0s)"
         >
           Partly Cloudy
         </div>
         <div
-          class={css`
-            animation: ${fadeOutAnimation} 1s linear forwards;
-            animation-play-state: paused;
-            animation-delay: clamp(-1s, (var(--scroll-y) - 45) / 40 * -1s, 0s);
-          `}
+          class="animate-fadeOut animation-paused"
+          style="animation-delay: clamp(-1s, (var(--scroll-y) - 45) / 40 * -1s, 0s)"
         >
           H:35° L:21°
         </div>
       </div>
 
-      <div
-        class={css`
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        `}
-      >
+      <div class="flex flex-col gap-2.5">
         <HourlyWeatherWidget />
         <TenDayForcastWidget />
         <TenDayForcastWidget />
@@ -137,14 +107,9 @@ const App: Component = () => {
   );
 };
 
-const fadeOutAnimation = keyframes`
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-`;
+type Falsy = false | null | undefined | 0 | "";
+const isFalsy = <T,>(v: T): v is Extract<T, Falsy> =>
+  [false, undefined, null, 0, ""].includes(v as any);
 
 const comfortableTemp = [14, 21];
 const Progress = ({ low, high }: { low: number; high: number }) => {
@@ -154,112 +119,65 @@ const Progress = ({ low, high }: { low: number; high: number }) => {
   const end = toPercent((comfortableTemp[1] - low) / fullRange);
   return (
     <div
-      class={css`
-        height: 4px;
-        background: var(--color-transparent);
-        position: relative;
-        &:after {
-          content: "";
-          left: ${String(start)}%;
-          width: ${String(end - start)}%;
-          height: 100%;
-          position: absolute;
-          background: yellow;
-        }
-        /* min-width: 40px; */
-        /* max-width: 100px; */
-      `}
+      class={cx(
+        tw`h-1 bg-trasparent relative`,
+        css`
+          &:after {
+            content: "";
+            left: ${String(start)}%;
+            width: ${String(end - start)}%;
+            height: 100%;
+            position: absolute;
+            background: yellow;
+          }
+        `
+      )}
     />
   );
 };
 
-const WidgetTitle = styled("div")`
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  color: var(--color-transparent);
+const WidgetTitle = tw("div")`
+  text-[0.8rem]
+  uppercase
+  text-trasparent
 `;
 
 const HourlyWeatherWidget = () => (
   <Widget
     title={
-      <div
-        class={css`
-          position: relative;
-        `}
-      >
+      <div class="relative">
         <WidgetTitle
-          class={css`
-            animation: ${fadeOutAnimation} 1s linear forwards;
-            animation-direction: reverse;
-            animation-play-state: paused;
-            animation-delay: clamp(-1s, (var(--scroll-y) - 180) / 40 * -1s, 0s);
-          `}
+          class="animate-fadeOut animation-reversed animation-paused"
+          style="animation-delay: clamp(-1s, (var(--scroll-y) - 180) / 40 * -1s, 0s)"
         >
           Hourly forecast
         </WidgetTitle>
         <div
-          class={cx(css`
-            font-size: 0.85rem;
-            position: absolute;
-            top: 0;
-            width: 100%;
-            animation: ${fadeOutAnimation} 1s linear forwards;
-            animation-play-state: paused;
-            animation-delay: clamp(-1s, (var(--scroll-y) - 160) / 30 * -1s, 0s);
-          `)}
+          class={tw`
+            text-[0.85rem] absolute top-0 w-full
+            animate-fadeOut animation-paused
+          `}
+          style="animation-delay: clamp(-1s, (var(--scroll-y) - 160) / 30 * -1s, 0s)"
         >
           Clear conditions tonight, continuing throughout the morning. Wind
           gusts are up to 11 mph.
-          <hr
-            class={css`
-              margin: 14px -14px 0 0;
-            `}
-          />
+          <hr class="mt-[14px] mr-[-14px]" />
         </div>
       </div>
     }
   >
-    <div
-      class={
-        css`
-          padding-top: 12px;
-          margin-left: -14px;
-          margin-right: -14px;
-          overflow-x: auto;
-        ` + ` no-scrollbar`
-      }
-    >
-      <div
-        class={css`
-          display: flex;
-          gap: 16px;
-          /* padding-left: 14px; */
-          padding: 14px 0 14px 14px;
-        `}
-      >
+    <div class="no-scrollbar pt-3 mx-[-14px] overflow-x-auto">
+      <div class="flex gap-4 p-3.5 pr-0">
         {[23, 24, 24, 24, 23, 22, 21, 20, 18, 17, 16, 15, 14].map(
           (temperature, i) => (
-            <div
-              class={css`
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                gap: 8px;
-              `}
-            >
-              <div>{i === 0 ? "Now" : (i + 24) % 31}</div>
+            <div class="flex flex-col justify-center items-center gap-2">
+              <div>{i === 0 ? "Now" : (i + 16) % 24}</div>
               <div>{temperature}</div>
             </div>
           )
         )}
         {/* hack to add more padding on the right */}
-        <div
-          class={css`
-            padding-left: 1px;
-            margin-left: -1px;
-          `}
-        />
+        <div class="pl-[1px] ml-[-1px]" />
       </div>
     </div>
   </Widget>
@@ -281,36 +199,20 @@ const TenDayForcastWidget = () => (
       { time: "Wed", low: 12, high: 23 },
       { time: "Thu", low: 11, high: 20 },
     ].map((x, i, arr) => (
-      <>
-        {/* {i === 0 ? <hr style="position: absolute; margin-top: 0;" /> : <hr />} */}
-        {/* {i !== arr.length - 1 && <hr />} */}
-        <div
-          class={css`
-            display: grid;
-            grid-auto-flow: column;
-            grid-template-columns: 1fr 1fr 4fr 1fr;
-            column-count: 4;
-            gap: 10px;
-            align-items: center;
-            padding: 8px 0;
-            position: relative;
-            &::before {
-              content: "";
-              position: absolute;
-              top: 0;
-              left: 0;
-              right: 0;
-              height: 0.5px;
-              background-color: var(--color-transparent);
-            }
+      <div
+        class={tw`
+            grid grid-flow-col grid-cols-[1fr_1fr_4fr_1fr] columns-4
+            gap-2.5 items-center py-2 relative
+            before:content-[""] before:absolute 
+            before:top-0 before:inset-x-0 before:h-[0.5px]
+            before:bg-trasparent
           `}
-        >
-          <Centered>{x.time}</Centered>
-          <Centered>{x.low}</Centered>
-          <Progress low={x.low} high={x.high} />
-          <Centered>{x.high}</Centered>
-        </div>
-      </>
+      >
+        <Centered>{x.time}</Centered>
+        <Centered>{x.low}</Centered>
+        <Progress low={x.low} high={x.high} />
+        <Centered>{x.high}</Centered>
+      </div>
     ))}
   </Widget>
 );
@@ -318,11 +220,7 @@ const TenDayForcastWidget = () => (
 const clamp = (min: number, max: number) => (num: number) =>
   Math.max(Math.min(num, max), min);
 
-const Centered = styled("div")`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
+const Centered = tw("div")`flex justify-center items-center`;
 
 const Widget = ({
   title,
@@ -444,9 +342,8 @@ const Widget = ({
       <div
         class={cx(
           backdropStyles,
+          tw`text-white rounded-[10px]`,
           css`
-            color: white;
-            border-radius: 10px;
             max-height: calc(
               max(var(--header-height), var(--height) + var(--scroll-offset)) *
                 1px
@@ -467,9 +364,8 @@ const Widget = ({
           ref={headerRef}
           class={cx(
             paddingStyles,
+            tw`rounded-t-[10px]`,
             css`
-              border-top-right-radius: 10px;
-              border-top-left-radius: 10px;
               /* position: sticky;
             top: 90px; */
 
@@ -490,20 +386,13 @@ const Widget = ({
           {title}
         </div>
 
-        <div
-          class={cx(
-            css`
-              overflow-y: clip;
-            `
-          )}
-        >
+        <div class="overflow-y-clip">
           <div
             ref={contentRef}
             class={cx(
+              tw`px-3.5 relative`,
               // paddingStyles,
               css`
-                padding: 0 14px;
-                position: relative;
                 transform: translateY(calc(var(--scroll-offset) * 1px));
               `
               // css`
